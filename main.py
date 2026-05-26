@@ -1,69 +1,60 @@
 import requests
-import cloudscraper
 
 BOT_TOKEN = "7983931203:AAE9B5Blt6QFNLyzto-m-NA4rxzhZAnySU8"
 CHAT_ID = "8626017722"
 
-scraper = cloudscraper.create_scraper()
+HEADERS = {
+    "User-Agent": "Instagram 219.0.0.12.117 Android"
+}
 
 
 def send_telegram(message):
 
+    requests.get(
+        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+        params={
+            "chat_id": CHAT_ID,
+            "text": message
+        },
+        timeout=20
+    )
+
+
+def check_username(username):
+
     try:
 
-        requests.get(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            params={
-                "chat_id": CHAT_ID,
-                "text": message
-            },
-            timeout=20
+        url = (
+            "https://i.instagram.com/api/v1/"
+            f"users/web_profile_info/?username={username}"
         )
 
-    except Exception as e:
-
-        print("Telegram Error:", e)
-
-
-def check_instagram(username):
-
-    try:
-
-        url = f"https://www.instagram.com/{username}/"
-
-        response = scraper.get(
+        r = requests.get(
             url,
-            headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/124.0 Safari/537.36"
-                )
-            },
+            headers=HEADERS,
             timeout=30
         )
 
-        html = response.text.lower()
+        text = r.text.lower()
 
-        print(f"{username} => {response.status_code}")
+        print(username)
+        print(text[:200])
 
-        if response.status_code == 404:
+        # USER EXISTS
+        if '"user":{' in text:
+
+            return "active"
+
+        # USER NOT FOUND / BANNED
+        if '"user":null' in text:
 
             return "banned"
 
-        if (
-            "sorry, this page isn't available" in html
-            or "the link you followed may be broken" in html
-            or "page isn't available" in html
-        ):
-
-            return "banned"
-
-        return "active"
+        return "unknown"
 
     except Exception as e:
 
-        print("Instagram Error:", e)
+        print(e)
 
         return "error"
 
@@ -79,9 +70,9 @@ with open("usernames.txt", "r") as f:
 
 for username in usernames:
 
-    status = check_instagram(username)
+    status = check_username(username)
 
-    print(f"{username} => {status}")
+    print(username, status)
 
     if status == "banned":
 
