@@ -4,7 +4,9 @@ BOT_TOKEN = "7983931203:AAE9B5Blt6QFNLyzto-m-NA4rxzhZAnySU8"
 CHAT_ID = "8626017722"
 
 HEADERS = {
-    "User-Agent": "Instagram 219.0.0.12.117 Android"
+    "User-Agent": (
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)"
+    )
 }
 
 
@@ -24,29 +26,33 @@ def check_username(username):
 
     try:
 
-        url = (
-            "https://i.instagram.com/api/v1/"
-            f"users/web_profile_info/?username={username}"
-        )
+        url = f"https://www.instagram.com/{username}/"
 
         r = requests.get(
             url,
             headers=HEADERS,
-            timeout=30
+            timeout=20,
+            allow_redirects=True
         )
 
-        text = r.text.lower()
+        html = r.text.lower()
 
-        print(username)
-        print(text[:200])
+        print(username, r.status_code)
 
-        # USER EXISTS
-        if '"user":{' in text:
+        # ACCOUNT EXISTS
+        if (
+            r.status_code == 200
+            and username.lower() in html
+        ):
 
             return "active"
 
-        # USER NOT FOUND / BANNED
-        if '"user":null' in text:
+        # ACCOUNT NOT FOUND
+        if (
+            r.status_code == 404
+            or "sorry, this page isn't available" in html
+            or "page isn't available" in html
+        ):
 
             return "banned"
 
@@ -77,5 +83,5 @@ for username in usernames:
     if status == "banned":
 
         send_telegram(
-            f"🚨 INSTAGRAM ID BANNED\n\n@{username}"
+            f"🚨 ID BANNED\n\n@{username}"
         )
