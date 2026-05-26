@@ -1,12 +1,8 @@
 import requests
 import cloudscraper
-import json
-import os
 
 BOT_TOKEN = "7983931203:AAE9B5Blt6QFNLyzto-m-NA4rxzhZAnySU8"
 CHAT_ID = "8626017722"
-
-STATUS_FILE = "status.json"
 
 scraper = cloudscraper.create_scraper()
 
@@ -72,30 +68,6 @@ def check_instagram(username):
         return "error"
 
 
-def load_status():
-
-    if os.path.exists(STATUS_FILE):
-
-        try:
-
-            with open(STATUS_FILE, "r") as f:
-
-                return json.load(f)
-
-        except:
-
-            return {}
-
-    return {}
-
-
-def save_status(data):
-
-    with open(STATUS_FILE, "w") as f:
-
-        json.dump(data, f)
-
-
 with open("usernames.txt", "r") as f:
 
     usernames = [
@@ -105,30 +77,14 @@ with open("usernames.txt", "r") as f:
     ]
 
 
-old_status = load_status()
-
-new_status = {}
-
-
 for username in usernames:
 
     status = check_instagram(username)
 
     print(f"{username} => {status}")
 
-    new_status[username] = status
-
-    old = old_status.get(username)
-
-    if old == "active" and status == "banned":
+    if status == "banned":
 
         send_telegram(
             f"🚨 INSTAGRAM ID BANNED\n\n@{username}"
         )
-
-    elif old is None:
-
-        print(f"First check saved: {username} => {status}")
-
-
-save_status(new_status)
