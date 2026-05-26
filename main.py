@@ -1,18 +1,12 @@
 import requests
 import cloudscraper
-import json
-import os
 
-BOT_TOKEN = "7983931203:AAE9B5Blt6QFNLyzto-m-NA4rxzhZAnySU8"
-CHAT_ID = "8626017722"
+BOT_TOKEN = "YOUR_BOT_TOKEN"
+CHAT_ID = "YOUR_CHAT_ID"
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0"
-}
+USERNAME = "minakshi_official11"
 
 scraper = cloudscraper.create_scraper()
-
-STATUS_FILE = "status.json"
 
 def send_telegram(msg):
 
@@ -24,80 +18,47 @@ def send_telegram(msg):
         }
     )
 
-def check_instagram(username):
+try:
 
-    try:
+    url = f"https://www.instagram.com/{USERNAME}/"
 
-        r = scraper.get(
-            f"https://www.instagram.com/{username}/",
-            headers=HEADERS,
-            timeout=30
-        )
+    r = scraper.get(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0"
+        },
+        timeout=30
+    )
 
-        html = r.text.lower()
+    html = r.text.lower()
 
-        if r.status_code == 200:
+    message = (
+        f"USERNAME: {USERNAME}\n"
+        f"STATUS CODE: {r.status_code}\n"
+    )
 
-            if "sorry, this page isn't available" in html:
-                return "banned"
+    if r.status_code == 200:
 
-            return "active"
+        if "sorry, this page isn't available" in html:
 
-        if r.status_code == 404:
-            return "banned"
+            message += "RESULT: BANNED"
 
-        return "unknown"
+        else:
 
-    except:
-        return "error"
+            message += "RESULT: ACTIVE"
 
-def load_status():
+    elif r.status_code == 404:
 
-    if os.path.exists(STATUS_FILE):
+        message += "RESULT: BANNED"
 
-        with open(STATUS_FILE, "r") as f:
-            return json.load(f)
+    else:
 
-    return {}
+        message += "RESULT: UNKNOWN"
 
-def save_status(data):
+    print(message)
 
-    with open(STATUS_FILE, "w") as f:
-        json.dump(data, f)
+    send_telegram(message)
 
-with open("usernames.txt", "r") as f:
+except Exception as e:
 
-    usernames = [
-        x.strip()
-        for x in f.readlines()
-        if x.strip()
-    ]
-
-old_status = load_status()
-
-new_status = {}
-
-for username in usernames:
-
-    status = check_instagram(username)
-
-    new_status[username] = status
-
-    old = old_status.get(username)
-
-    print(username, status)
-
-    if old == "active" and status == "banned":
-
-        send_telegram(
-            f"🚨 ID BANNED\n\n@{username}"
-        )
-
-    if status == "banned":
-
-        send_telegram(
-            f"✅ ID RETURNED\n\n@{username}"
-        )
-
-save_status(new_status)
-send_telegram("SCRIPT ON")
+    send_telegram(f"ERROR: {str(e)}")
