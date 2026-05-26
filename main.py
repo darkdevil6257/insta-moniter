@@ -100,4 +100,4 @@ for username in usernames:
         )
 
 save_status(new_status)
-send_telegram("tTEST OK")
+send_telegram("SCRIPT ON")
