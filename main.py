@@ -93,7 +93,7 @@ for username in usernames:
             f"🚨 ID BANNED\n\n@{username}"
         )
 
-    if old == "banned" and status == "active":
+    if status == "banned":
 
         send_telegram(
             f"✅ ID RETURNED\n\n@{username}"
