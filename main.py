@@ -1,8 +1,8 @@
 import requests
 import cloudscraper
 
-BOT_TOKEN = "YOUR_BOT_TOKEN"
-CHAT_ID = "YOUR_CHAT_ID"
+BOT_TOKEN = "7983931203:AAE9B5Blt6QFNLyzto-m-NA4rxzhZAnySU8"
+CHAT_ID = "8626017722"
 
 USERNAME = "minakshi_official11"
 
