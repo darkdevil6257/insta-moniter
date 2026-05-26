@@ -4,61 +4,86 @@ import cloudscraper
 BOT_TOKEN = "7983931203:AAE9B5Blt6QFNLyzto-m-NA4rxzhZAnySU8"
 CHAT_ID = "8626017722"
 
-USERNAME = "minakshi_official11"
-
 scraper = cloudscraper.create_scraper()
 
-def send_telegram(msg):
+
+def send_telegram(message):
 
     requests.get(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
         params={
             "chat_id": CHAT_ID,
-            "text": msg
+            "text": message
         }
     )
 
-try:
 
-    url = f"https://www.instagram.com/{USERNAME}/"
+def check_instagram(username):
 
-    r = scraper.get(
-        url,
-        headers={
-            "User-Agent": "Mozilla/5.0"
-        },
-        timeout=30
-    )
+    try:
 
-    html = r.text.lower()
+        url = f"https://www.instagram.com/{username}/"
 
-    message = (
-        f"USERNAME: {USERNAME}\n"
-        f"STATUS CODE: {r.status_code}\n"
-    )
+        r = scraper.get(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0"
+            },
+            timeout=30
+        )
 
-    if r.status_code == 200:
+        html = r.text.lower()
 
-        if "sorry, this page isn't available" in html:
+        print(f"{username} => {r.status_code}")
 
-            message += "RESULT: BANNED"
+        if (
+            "sorry, this page isn't available" in html
+            or "page isn't available" in html
+            or "the link you followed may be broken" in html
+            or '"user":null' in html
+            or f'"username":"{username.lower()}"' not in html
+        ):
 
-        else:
+            return "banned"
 
-            message += "RESULT: ACTIVE"
+        return "active"
 
-    elif r.status_code == 404:
+    except Exception as e:
 
-        message += "RESULT: BANNED"
+        print(e)
+
+        return "error"
+
+
+with open("usernames.txt", "r") as f:
+
+    usernames = [
+        x.strip()
+        for x in f.readlines()
+        if x.strip()
+    ]
+
+
+for username in usernames:
+
+    status = check_instagram(username)
+
+    print(f"{username} => {status}")
+
+    if status == "banned":
+
+        send_telegram(
+            f"🚨 ID BANNED\n\n@{username}"
+        )
+
+    elif status == "active":
+
+        send_telegram(
+            f"✅ ACTIVE\n\n@{username}"
+        )
 
     else:
 
-        message += "RESULT: UNKNOWN"
-
-    print(message)
-
-    send_telegram(message)
-
-except Exception as e:
-
-    send_telegram(f"ERROR: {str(e)}")
+        send_telegram(
+            f"⚠️ ERROR\n\n@{username}"
+        )
