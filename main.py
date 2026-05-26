@@ -1,67 +1,35 @@
-import time
 import requests
 import cloudscraper
-from datetime import datetime
-
-# =========================
-# TELEGRAM CONFIG
-# =========================
+import json
+import os
 
 BOT_TOKEN = "7983931203:AAE9B5Blt6QFNLyzto-m-NA4rxzhZAnySU8"
 CHAT_ID = "8626017722"
 
-# =========================
-# SETTINGS
-# =========================
-
-CHECK_INTERVAL = 300
-REQUEST_DELAY = 8
-
 HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X)"
-    )
+    "User-Agent": "Mozilla/5.0"
 }
 
 scraper = cloudscraper.create_scraper()
 
-known_status = {}
+STATUS_FILE = "status.json"
 
-# =========================
-# TELEGRAM ALERT
-# =========================
+def send_telegram(msg):
 
-def send_telegram(message):
-
-    try:
-
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-
-        requests.get(
-            url,
-            params={
-                "chat_id": CHAT_ID,
-                "text": message
-            },
-            timeout=30
-        )
-
-    except Exception as e:
-
-        print("Telegram Error:", e)
-
-# =========================
-# CHECK INSTAGRAM
-# =========================
+    requests.get(
+        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+        params={
+            "chat_id": CHAT_ID,
+            "text": msg
+        }
+    )
 
 def check_instagram(username):
 
     try:
 
-        url = f"https://www.instagram.com/{username}/"
-
         r = scraper.get(
-            url,
+            f"https://www.instagram.com/{username}/",
             headers=HEADERS,
             timeout=30
         )
@@ -78,77 +46,57 @@ def check_instagram(username):
         if r.status_code == 404:
             return "banned"
 
-        if r.status_code == 429:
-            return "rate_limited"
-
         return "unknown"
 
-    except Exception as e:
-
-        print(username, e)
-
+    except:
         return "error"
 
-# =========================
-# LOAD USERNAMES
-# =========================
+def load_status():
 
-def load_usernames():
+    if os.path.exists(STATUS_FILE):
 
-    with open("usernames.txt", "r", encoding="utf-8") as f:
+        with open(STATUS_FILE, "r") as f:
+            return json.load(f)
 
-        return [
-            line.strip()
-            for line in f.readlines()
-            if line.strip()
-        ]
+    return {}
 
-# =========================
-# START
-# =========================
+def save_status(data):
 
-send_telegram("✅ Instagram monitor started")
+    with open(STATUS_FILE, "w") as f:
+        json.dump(data, f)
 
-# =========================
-# LOOP
-# =========================
+with open("usernames.txt", "r") as f:
 
-while True:
+    usernames = [
+        x.strip()
+        for x in f.readlines()
+        if x.strip()
+    ]
 
-    print("\n====================")
-    print("CHECK:", datetime.now())
-    print("====================")
+old_status = load_status()
 
-    usernames = load_usernames()
+new_status = {}
 
-    for username in usernames:
+for username in usernames:
 
-        status = check_instagram(username)
+    status = check_instagram(username)
 
-        old_status = known_status.get(username)
+    new_status[username] = status
 
-        print(username, "=>", status)
+    old = old_status.get(username)
 
-        if old_status is None:
+    print(username, status)
 
-            known_status[username] = status
+    if old == "active" and status == "banned":
 
-        else:
+        send_telegram(
+            f"🚨 ID BANNED\n\n@{username}"
+        )
 
-            if old_status == "active" and status == "banned":
+    if old == "banned" and status == "active":
 
-                send_telegram(
-                    f"🚨 ID BANNED\n\n@{username}"
-                )
+        send_telegram(
+            f"✅ ID RETURNED\n\n@{username}"
+        )
 
-            if old_status == "banned" and status == "active":
-
-                send_telegram(
-                    f"✅ ID RETURNED\n\n@{username}"
-                )
-
-            known_status[username] = status
-
-        time.sleep(REQUEST_DELAY)
-
-    time.sleep(CHECK_INTERVAL)
+save_status(new_status)
